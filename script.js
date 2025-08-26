@@ -8,7 +8,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 let earthquakeLayer = L.layerGroup().addTo(map);
 
-// Color based on magnitude
+// Get marker color based on magnitude
 function getColor(mag) {
     return mag >= 4 ? "#ff0000" :
            mag >= 3 ? "#ff6600" :
@@ -16,7 +16,7 @@ function getColor(mag) {
                       "#00cc66";
 }
 
-// Radius proportional to magnitude
+// Marker size proportional to magnitude
 function getRadius(mag) {
     return mag && !isNaN(mag) ? mag * 3.5 : 3;
 }
@@ -49,19 +49,7 @@ function plotEarthquakes(data) {
     });
 }
 
-// Load all historical earthquakes
-async function loadHistorical() {
-    try {
-        const res = await fetch(`${API_BASE}/historical`);
-        const data = await res.json();
-        console.log(`Loaded ${data.length} earthquakes`);
-        plotEarthquakes(data);
-    } catch (err) {
-        console.error("Failed to load historical data:", err);
-    }
-}
-
-// Load earthquakes for a specific date (IGN format: DD/MM/YYYY)
+// Load earthquakes for a specific day (IGN format: DD/MM/YYYY)
 async function loadDay(date) {
     try {
         const res = await fetch(`${API_BASE}/day/${date}`);
@@ -73,10 +61,7 @@ async function loadDay(date) {
     }
 }
 
-// Initial load → full history + today's data
-loadHistorical();
-
-// Fix: Convert JS date YYYY-MM-DD → IGN format DD/MM/YYYY
+// Convert today's date to IGN format: DD/MM/YYYY
 function getIGNDateFormat() {
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, "0");
@@ -85,13 +70,18 @@ function getIGNDateFormat() {
     return `${dd}/${mm}/${yyyy}`;
 }
 
-// Load today's earthquakes in IGN date format
-loadDay(getIGNDateFormat());
+// Set date picker to today in HTML-friendly YYYY-MM-DD format
+function setDefaultDatePicker() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    document.getElementById("date-picker").value = `${yyyy}-${mm}-${dd}`;
+}
 
-// Auto-refresh every 15 min
-setInterval(() => {
-    loadDay(getIGNDateFormat());
-}, 15 * 60 * 1000);
+// Initialize page
+setDefaultDatePicker();
+loadDay(getIGNDateFormat());
 
 // Handle date picker → convert to IGN format DD/MM/YYYY
 document.getElementById("date-picker").addEventListener("change", (e) => {
@@ -102,3 +92,8 @@ document.getElementById("date-picker").addEventListener("change", (e) => {
         loadDay(formatted);
     }
 });
+
+// Auto-refresh today’s earthquakes every 15 minutes
+setInterval(() => {
+    loadDay(getIGNDateFormat());
+}, 15 * 60 * 1000);
