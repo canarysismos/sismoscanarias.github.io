@@ -1,23 +1,22 @@
 const API_BASE = "https://api.quakes.earth";
 const map = L.map("map").setView([28.3, -16.6], 7); // Canary Islands center
 
-// Add OpenStreetMap base tiles
+// Add OpenStreetMap tiles
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-// Create a layer for earthquake markers
 let earthquakeLayer = L.layerGroup().addTo(map);
 
-// Get marker color based on magnitude
+// Color based on magnitude
 function getColor(mag) {
-    return mag >= 4 ? "#ff0000" :    // strong → red
-           mag >= 3 ? "#ff6600" :    // moderate → orange
-           mag >= 2 ? "#ffcc00" :    // light → yellow
-                       "#00cc66";    // weak → green
+    return mag >= 4 ? "#ff0000" :
+           mag >= 3 ? "#ff6600" :
+           mag >= 2 ? "#ffcc00" :
+                      "#00cc66";
 }
 
-// Marker size proportional to magnitude
+// Radius proportional to magnitude
 function getRadius(mag) {
     return mag && !isNaN(mag) ? mag * 3.5 : 3;
 }
@@ -50,23 +49,22 @@ function plotEarthquakes(data) {
     });
 }
 
-// Load historical earthquakes
+// Load all historical earthquakes
 async function loadHistorical() {
     try {
         const res = await fetch(`${API_BASE}/historical`);
         const data = await res.json();
-        console.log(`Loaded ${data.length} historical earthquakes`);
+        console.log(`Loaded ${data.length} earthquakes`);
         plotEarthquakes(data);
     } catch (err) {
         console.error("Failed to load historical data:", err);
     }
 }
 
-// Load earthquakes for a specific day
+// Load earthquakes for a specific date (IGN format: DD/MM/YYYY)
 async function loadDay(date) {
     try {
         const res = await fetch(`${API_BASE}/day/${date}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         console.log(`Loaded ${data.length} earthquakes for ${date}`);
         plotEarthquakes(data);
@@ -77,18 +75,28 @@ async function loadDay(date) {
 
 // Initial load → full history + today's data
 loadHistorical();
-loadDay(new Date().toISOString().split("T")[0]);
 
-// Auto-refresh today's data every 15 minutes
+// Fix: Convert JS date YYYY-MM-DD → IGN format DD/MM/YYYY
+function getIGNDateFormat() {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, "0");
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const yyyy = today.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
+// Load today's earthquakes in IGN date format
+loadDay(getIGNDateFormat());
+
+// Auto-refresh every 15 min
 setInterval(() => {
-    loadDay(new Date().toISOString().split("T")[0]);
+    loadDay(getIGNDateFormat());
 }, 15 * 60 * 1000);
 
-// Handle date picker changes
+// Handle date picker → convert to IGN format DD/MM/YYYY
 document.getElementById("date-picker").addEventListener("change", (e) => {
     const date = e.target.value;
     if (date) {
-        // Convert YYYY-MM-DD → DD/MM/YYYY for IGN format
         const [year, month, day] = date.split("-");
         const formatted = `${day}/${month}/${year}`;
         loadDay(formatted);
