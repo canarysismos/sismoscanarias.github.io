@@ -1,19 +1,20 @@
 const API_BASE = "https://api.quakes.earth";
-const map = L.map("map").setView([28.3, -16.6], 7); // Canary Islands
+const map = L.map("map").setView([28.3, -16.6], 7); // Canary Islands center
 
-// Base OpenStreetMap layer
+// OpenStreetMap base layer
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Layer for earthquakes
 let earthquakeLayer = L.layerGroup().addTo(map);
 
-// Colors by magnitude
+// Get marker color based on magnitude
 function getColor(mag) {
-    return mag >= 4 ? "#ff0000" :
-           mag >= 3 ? "#ff6600" :
-           mag >= 2 ? "#ffcc00" :
-                      "#00cc66";
+    return mag >= 4 ? "#ff0000" :    // strong → red
+           mag >= 3 ? "#ff6600" :    // moderate → orange
+           mag >= 2 ? "#ffcc00" :    // light → yellow
+                       "#00cc66";    // weak → green
 }
 
 // Marker size proportional to magnitude
@@ -21,16 +22,20 @@ function getRadius(mag) {
     return mag > 0 ? mag * 3.5 : 3;
 }
 
-// Plot earthquakes
+// Plot earthquakes on the map
 function plotEarthquakes(data) {
     earthquakeLayer.clearLayers();
+
     data.forEach(eq => {
+        if (!eq.lat || !eq.lon || isNaN(eq.lat) || isNaN(eq.lon)) return;
+
         const marker = L.circleMarker([eq.lat, eq.lon], {
             radius: getRadius(eq.mag),
             color: getColor(eq.mag),
             fillOpacity: 0.6,
             weight: 1
         });
+
         marker.bindPopup(`
             <b>${eq.title || "Earthquake"}</b><br>
             <b>Magnitude:</b> ${eq.mag}<br>
@@ -40,35 +45,77 @@ function plotEarthquakes(data) {
                 🌍 View on Google Maps
             </a>
         `);
+
         marker.addTo(earthquakeLayer);
     });
 }
 
-// Load data from API
-async function loadData(endpoint) {
+// Parse the raw historical data file
+async function loadHistorical() {
     try {
-        const res = await fetch(`${API_BASE}${endpoint}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const res = await fetch(`${API_BASE}/historical`);
+        const rawText = await res.text();
+        const lines = rawText.split("\n").filter(line => line.trim().length > 0);
+
+        const data = lines.map(line => {
+            const parts = line.trim().split(/\s+/);
+
+            // IGN format assumption: YYYY-MM-DD HH:MM:SS LAT LON MAG DEPTH LOCATION...
+            return {
+                time: `${parts[0]} ${parts[1]}`,
+                lat: parseFloat(parts[2]),
+                lon: parseFloat(parts[3]),
+                mag: parseFloat(parts[4]),
+                depth: parseFloat(parts[5]),
+                title: parts.slice(6).join(" ") || "Unknown location"
+            };
+        });
+
         plotEarthquakes(data);
     } catch (err) {
-        console.error(`Failed to fetch ${endpoint}:`, err);
+        console.error("Failed to load historical data:", err);
     }
 }
 
-// Load initial data
-loadData("/historical");
-loadData(`/day/${new Date().toISOString().split("T")[0]}`);
+// Load earthquakes for a specific day
+async function loadDay(date) {
+    try {
+        const res = await fetch(`${API_BASE}/day/${date}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rawText = await res.text();
+        const lines = rawText.split("\n").filter(line => line.trim().length > 0);
 
-// Auto-refresh today's data every 15 min
+        const data = lines.map(line => {
+            const parts = line.trim().split(/\s+/);
+            return {
+                time: `${parts[0]} ${parts[1]}`,
+                lat: parseFloat(parts[2]),
+                lon: parseFloat(parts[3]),
+                mag: parseFloat(parts[4]),
+                depth: parseFloat(parts[5]),
+                title: parts.slice(6).join(" ") || "Unknown location"
+            };
+        });
+
+        plotEarthquakes(data);
+    } catch (err) {
+        console.error(`Failed to load data for ${date}:`, err);
+    }
+}
+
+// Initial load → full history + today's data
+loadHistorical();
+loadDay(new Date().toISOString().split("T")[0]);
+
+// Auto-refresh today's data every 15 minutes
 setInterval(() => {
-    loadData(`/day/${new Date().toISOString().split("T")[0]}`);
+    loadDay(new Date().toISOString().split("T")[0]);
 }, 15 * 60 * 1000);
 
-// Date picker handler
+// Date picker event
 document.getElementById("date-picker").addEventListener("change", (e) => {
     const date = e.target.value;
     if (date) {
-        loadData(`/day/${date}`);
+        loadDay(date);
     }
 });
