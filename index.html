@@ -1,122 +1,48 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>quakes.earth — Mapa interactivo de terremotos (IGN)</title>
-  <meta name="description" content="Mapa interactivo de terremotos con datos del Instituto Geográfico Nacional (IGN). Filtra por fecha, magnitud y explora analíticas por periodos y zonas." />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/chart.js@4.4.3/dist/chart.umd.js"></script>
-  <script src="https://unpkg.com/dayjs@1.11.11/dayjs.min.js"></script>
-  <script src="https://unpkg.com/dayjs@1.11.11/plugin/utc.js"></script>
-  <script src="https://unpkg.com/dayjs@1.11.11/plugin/timezone.js"></script>
-  <style>
-    /* (CSS unchanged from previous version) */
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canary Islands Earthquakes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px 14px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            z-index: 9999;
+        }
+        .leaflet-popup-content {
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <!-- header content unchanged -->
-  </header>
-  <main>
+    <div class="header">
+        🔗 Fuente: <a href="https://www.ign.es/web/ign/portal/sis-catalogo-terremotos" target="_blank">
+        Instituto Geográfico Nacional (IGN)</a>
+    </div>
     <div id="map"></div>
-    <aside class="side">
-      <!-- analytics & charts unchanged -->
-    </aside>
-  </main>
 
-  <script>
-  dayjs.extend(dayjs_plugin_utc);
-  dayjs.extend(dayjs_plugin_timezone);
-  const TZ = 'Atlantic/Canary';
-
-  // ✅ Update: Use VPS API instead of local /data
-  const DATA_BASE = 'https://api.quakes.earth/data';
-  const HISTORICAL_URL = 'https://api.quakes.earth/historical';
-
-  const map = L.map('map').setView([28.1, -15.4], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-
-  let quakeLayer = null;
-
-  const $ = (sel) => document.querySelector(sel);
-
-  async function fetchJSON(url) {
-    try {
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      return await r.json();
-    } catch (e) {
-      console.warn('Fetch failed', url, e);
-      return null;
-    }
-  }
-
-  function colorForMag(m) {
-    const clamped = Math.max(0, Math.min(6.5, m ?? 0));
-    const t = clamped / 6.5;
-    const hue = 120 * (1 - t);
-    return `hsl(${hue}, 85%, 50%)`;
-  }
-
-  function radiusForMag(m) {
-    if (m == null || isNaN(m)) return 4;
-    const r = 3 + Math.pow(Math.max(0, m), 1.8);
-    return Math.max(4, Math.min(28, r));
-  }
-
-  function popupHTML(ev) {
-    const when = new Date(ev.time).toLocaleString('es-ES', { timeZone: TZ });
-    return `<div style="min-width:200px">
-      <div style="font-weight:800;font-size:14px;">M ${ev.mag?.toFixed(1) ?? '—'} — ${ev.place ?? ''}</div>
-      <div style="color:#94a3b8;font-size:12px;margin:6px 0;">${when}</div>
-      <div style="font-size:12px;">Profundidad: <strong>${ev.depth_km != null ? ev.depth_km + ' km' : '—'}</strong></div>
-      ${ev.source_url ? `<div style="margin-top:6px"><a href="${ev.source_url}" target="_blank">Ver en IGN</a></div>` : ''}
-    </div>`;
-  }
-
-  function renderEvents(events) {
-    if (quakeLayer) map.removeLayer(quakeLayer);
-    quakeLayer = L.markerClusterGroup({ disableClusteringAtZoom: 10 });
-    events.forEach(ev => {
-      if (!ev.lat || !ev.lon || !ev.mag) return;
-      const marker = L.circleMarker([ev.lat, ev.lon], {
-        radius: radiusForMag(ev.mag),
-        color: colorForMag(ev.mag),
-        fillColor: colorForMag(ev.mag),
-        weight: 1,
-        opacity: 0.9,
-        fillOpacity: 0.55
-      }).bindPopup(popupHTML(ev));
-      quakeLayer.addLayer(marker);
-    });
-    quakeLayer.addTo(map);
-  }
-
-  async function loadToday() {
-    const today = dayjs().tz(TZ).format('YYYY-MM-DD');
-    const res = await fetchJSON(`${DATA_BASE}/${today}.json`);
-    renderEvents(res || []);
-  }
-
-  // ✅ Load historical data automatically
-  async function loadHistorical() {
-    const res = await fetchJSON(HISTORICAL_URL);
-    if (res && res.events) {
-      renderEvents(res.events);
-    }
-  }
-<script src="script.js"></script>
-  // Initial load
-  loadHistorical();
-  loadToday();
-  </script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Our Script -->
+    <script src="script.js"></script>
 </body>
 </html>
