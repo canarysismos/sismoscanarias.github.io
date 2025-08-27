@@ -1,12 +1,18 @@
-const API_BASE = "https://api.quakes.earth";
-const map = L.map("map").setView([28.3, -16.6], 7);
 
-// OpenStreetMap tiles
+const API_BASE = "https://api.quakes.earth";
+const map = L.map("map").setView([28.3, -16.6], 7); // Canary Islands center
+
+// Add OpenStreetMap tiles
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Layer for earthquake markers
 let earthquakeLayer = L.layerGroup().addTo(map);
+
+// HTML elements
+const datePicker = document.getElementById("date-picker");
+const dateLabel = document.getElementById("selected-date-label");
 
 // Color based on magnitude
 function getColor(mag) {
@@ -21,7 +27,7 @@ function getRadius(mag) {
     return mag && !isNaN(mag) ? mag * 3.5 : 3;
 }
 
-// Plot earthquakes on map
+// Plot earthquakes on the map
 function plotEarthquakes(data) {
     earthquakeLayer.clearLayers();
 
@@ -49,60 +55,50 @@ function plotEarthquakes(data) {
     });
 }
 
-// Load earthquakes for a specific date
-async function loadDay(date) {
-    try {
-        const res = await fetch(`${API_BASE}/day/${date}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        console.log(`Loaded ${data.length} earthquakes for ${date}`);
-        plotEarthquakes(data);
-    } catch (err) {
-        console.error(`Failed to load data for ${date}:`, err);
-    }
-}
-
-// Convert today's date into IGN format DD/MM/YYYY
-function getIGNDateFormat() {
+// Get today's date in ISO format (YYYY-MM-DD) for the <input type="date">
+function getTodayISO() {
     const today = new Date();
-    const dd = String(today.getDate()).padStart(2, "0");
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const yyyy = today.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
+    return today.toISOString().split("T")[0];
 }
 
 // Convert YYYY-MM-DD → DD/MM/YYYY for API
-function toIGNDateFormat(input) {
-    const [year, month, day] = input.split("-");
+function toIGNDate(isoDate) {
+    const [year, month, day] = isoDate.split("-");
     return `${day}/${month}/${year}`;
 }
 
-// Set default value in date picker (YYYY-MM-DD for input element)
-function setDatePickerToday() {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    document.getElementById("date-picker").value = `${yyyy}-${mm}-${dd}`;
+// Update the date label on the page (DD/MM/YYYY)
+function updateDateLabel(isoDate) {
+    dateLabel.textContent = `Fecha seleccionada: ${toIGNDate(isoDate)}`;
 }
 
-// Handle date picker change
-document.getElementById("date-picker").addEventListener("change", (e) => {
-    const date = e.target.value;
-    if (date) {
-        const formatted = toIGNDateFormat(date);
-        console.log(`Date changed to ${formatted}`);
-        loadDay(formatted);
+// Load earthquakes for a given ISO date
+async function loadQuakesByISODate(isoDate) {
+    const ignDate = toIGNDate(isoDate);
+    try {
+        const res = await fetch(`${API_BASE}/day/${ignDate}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        console.log(`Loaded ${data.length} earthquakes for ${ignDate}`);
+        plotEarthquakes(data);
+        updateDateLabel(isoDate);
+    } catch (err) {
+        console.error(`Failed to load data for ${ignDate}:`, err);
     }
+}
+
+// Handle date picker change → load new data
+datePicker.addEventListener("change", (e) => {
+    loadQuakesByISODate(e.target.value);
 });
 
-// Initialize → set picker to today + load today's data
-setDatePickerToday();
-loadDay(getIGNDateFormat());
+// Initialize to today's date on page load
+const todayISO = getTodayISO();
+datePicker.value = todayISO;
+loadQuakesByISODate(todayISO);
 
-// Auto-refresh data for currently selected date every 15 minutes
+// Auto-refresh currently selected date every 15 minutes
 setInterval(() => {
-    const pickerValue = document.getElementById("date-picker").value;
-    const formatted = toIGNDateFormat(pickerValue);
-    loadDay(formatted);
+    const isoDate = datePicker.value;
+    loadQuakesByISODate(isoDate);
 }, 15 * 60 * 1000);
