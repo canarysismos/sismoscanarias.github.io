@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canary Islands Earthquakes</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         html, body {
             height: 100%;
@@ -36,15 +38,13 @@
     </style>
 </head>
 <body>
-    <div class="header">
-    <span>
-        📎 Fuente: 
-        <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
-            Instituto Geográfico Nacional (IGN) - Catálogo de Terremotos
-        </a>
-    </span>
+   <div class="header">
+    📎 Fuente:
+    <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
+        Instituto Geográfico Nacional (IGN) - Catálogo de Terremotos
+    </a>
     <span id="selected-date-label" style="margin-left: 15px; font-weight: bold;"></span>
-    <input type="date" id="date-picker" />
+    <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly />
 </div>
     <div id="map"></div>
 
