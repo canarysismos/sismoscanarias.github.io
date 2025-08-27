@@ -1,17 +1,16 @@
 const API_BASE = "https://api.quakes.earth";
 const map = L.map("map").setView([28.3, -16.6], 7);
 
-// OpenStreetMap tiles
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 let earthquakeLayer = L.layerGroup().addTo(map);
 
-// DOM elements
+// Elements
 const datePicker = document.getElementById("date-picker");
 const dateLabel = document.getElementById("selected-date-label");
-const statusBar  = document.getElementById("status-bar");
+const statusBar = document.getElementById("status-bar");
 
 // --- Utilities ---
 function getColor(mag) {
@@ -34,20 +33,17 @@ function updateDateLabel(isoDate) {
     dateLabel.textContent = `Fecha seleccionada: ${toIGNDate(isoDate)}`;
 }
 
-// Parse "DD/MM/YYYY HH:MM:SS" to Date (local time)
+// Parse IGN datetime for "ago" in status bar
 function parseIgnDateTime(dt) {
-    // dt like "27/08/2025 13:15:01"
     const [dPart, tPart] = dt.split(" ");
-    if (!dPart) return null;
     const [dd, mm, yyyy] = dPart.split("/").map(Number);
     let hh = 0, mi = 0, ss = 0;
     if (tPart) [hh, mi, ss] = tPart.split(":").map(Number);
-    return new Date(yyyy, (mm - 1), dd, hh, mi, ss);
+    return new Date(yyyy, mm - 1, dd, hh, mi, ss);
 }
 
 function timeAgo(dtString) {
     const d = parseIgnDateTime(dtString);
-    if (!d) return "";
     const diffMs = Date.now() - d.getTime();
     const sec = Math.floor(diffMs / 1000);
     if (sec < 60) return `${sec}s`;
@@ -59,17 +55,22 @@ function timeAgo(dtString) {
     return `${day}d`;
 }
 
+function freshnessColor(dtString) {
+    const d = parseIgnDateTime(dtString);
+    const diffMin = Math.floor((Date.now() - d.getTime()) / (1000 * 60));
+    if (diffMin <= 15) return "status-fresh";   // 🟢
+    if (diffMin <= 60) return "status-warning"; // 🟠
+    return "status-stale";                      // 🔴
+}
+
 // --- Status bar ---
 async function fetchStatus() {
     try {
-        if (statusBar) {
-            statusBar.className = "status status-loading";
-            statusBar.textContent = "Cargando estado…";
-        }
         const res = await fetch(`${API_BASE}/status`);
         const s = await res.json();
 
         if (!statusBar) return;
+
         if (!s || s.status !== "ok") {
             statusBar.className = "status status-error";
             statusBar.textContent = "Estado: error — dataset no disponible.";
@@ -77,17 +78,16 @@ async function fetchStatus() {
         }
 
         const ago = timeAgo(s.last_update);
-        statusBar.className = "status status-ok";
+        statusBar.className = `status ${freshnessColor(s.last_update)}`;
         statusBar.innerHTML = `🔄 Última actualización: <b>${s.last_update}</b> (${ago}) · ⚡ Hoy: <b>${s.events_today}</b> · 📚 Total: <b>${s.total_events}</b>`;
     } catch (e) {
         if (!statusBar) return;
         statusBar.className = "status status-error";
         statusBar.textContent = "Estado: error al consultar /status.";
-        console.error("Status fetch failed:", e);
     }
 }
 
-// --- Plot markers on the map ---
+// --- Plot markers ---
 function plotEarthquakes(data) {
     earthquakeLayer.clearLayers();
 
@@ -120,24 +120,20 @@ function plotEarthquakes(data) {
     });
 }
 
-// --- Load earthquakes for specific date ---
+// --- Load quakes for a date ---
 async function loadQuakesByISODate(isoDate) {
     const ignDate = toIGNDate(isoDate);
-    console.log(`Fetching data for ${ignDate}...`);
-
     try {
         const res = await fetch(`${API_BASE}/day?date=${ignDate}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        console.log(`Loaded ${data.length} earthquakes for ${ignDate}`);
         plotEarthquakes(data);
         updateDateLabel(isoDate);
     } catch (err) {
-        console.error(`Failed to load data for ${ignDate}:`, err);
+        console.error(`Failed to load data for ${ignDate}`, err);
     }
 }
 
-// --- Fetch the latest active date and set it as default ---
+// --- Set initial date to latest available with events ---
 async function setInitialDate() {
     try {
         const res = await fetch(`${API_BASE}/latest-date`);
@@ -147,6 +143,7 @@ async function setInitialDate() {
             const [day, month, year] = json.latest.split("/");
             const isoDate = `${year}-${month}-${day}`;
             datePicker.value = isoDate;
+            datePicker.dataset.displayValue = json.latest;
             loadQuakesByISODate(isoDate);
         } else {
             console.warn("No earthquake data available.");
@@ -156,19 +153,47 @@ async function setInitialDate() {
     }
 }
 
-// --- Date picker event listener ---
-datePicker.addEventListener("change", (e) => {
-    const isoDate = e.target.value;
-    if (isoDate) loadQuakesByISODate(isoDate);
+// --- Display DD/MM/YYYY in input regardless of browser ---
+datePicker.addEventListener("input", function () {
+    const isoDate = this.value;
+    this.dataset.displayValue = toIGNDate(isoDate);
 });
 
-// --- Auto-refresh markers every 15 minutes ---
+// --- Force formatted value on render ---
+const style = document.createElement("style");
+style.innerHTML = `
+    .status { padding: 6px 10px; border-radius: 6px; display: inline-block; margin-top: 5px; }
+    .status-fresh   { background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; }    /* 🟢 Fresh */
+    .status-warning { background:#fff8e1; color:#7c5c00; border:1px solid #ffe082; }    /* 🟠 Warn */
+    .status-stale   { background:#ffebee; color:#b71c1c; border:1px solid #ffcdd2; }    /* 🔴 Stale */
+    .status-error   { background:#ffebee; color:#b71c1c; border:1px solid #ffcdd2; }
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-clear-button,
+    input[type="date"]::-webkit-inner-spin-button {
+        display: none;
+    }
+    input[type="date"]::before {
+        content: attr(data-display-value);
+    }
+`;
+document.head.appendChild(style);
+
+// --- Handle manual date changes ---
+datePicker.addEventListener("change", (e) => {
+    const isoDate = e.target.value;
+    if (isoDate) {
+        datePicker.dataset.displayValue = toIGNDate(isoDate);
+        loadQuakesByISODate(isoDate);
+    }
+});
+
+// --- Auto-refresh map + status every 15 min ---
 setInterval(() => {
     const isoDate = datePicker.value;
     if (isoDate) loadQuakesByISODate(isoDate);
-    fetchStatus(); // refresh status too
+    fetchStatus();
 }, 15 * 60 * 1000);
 
-// --- Initialize page ---
+// Init
 setInitialDate();
-fetchStatus(); // initial status fetch
+fetchStatus();
