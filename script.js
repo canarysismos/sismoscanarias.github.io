@@ -61,7 +61,7 @@ function plotEarthquakes(data) {
 
 async function loadQuakes(ignDate) {
     try {
-        const res = await fetch(`${API_BASE}/day/${ignDate}`);
+        const res = await fetch(`${API_BASE}/day?date=${ignDate}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         console.log(`Loaded ${data.length} earthquakes for ${ignDate}`);
