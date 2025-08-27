@@ -1,26 +1,18 @@
 const API_BASE = "https://api.quakes.earth";
 const map = L.map("map").setView([28.3, -16.6], 7);
 
+// OpenStreetMap tiles
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 let earthquakeLayer = L.layerGroup().addTo(map);
 
+// DOM elements
 const datePicker = document.getElementById("date-picker");
 const dateLabel = document.getElementById("selected-date-label");
 
-// Init custom date picker → force DD/MM/YYYY
-flatpickr(datePicker, {
-    dateFormat: "d/m/Y", // DD/MM/YYYY
-    defaultDate: new Date(),
-    onChange: function(selectedDates, dateStr) {
-        if (dateStr) {
-            loadQuakes(dateStr); // Send correct format directly
-        }
-    }
-});
-
+// --- Utility functions ---
 function getColor(mag) {
     return mag >= 4 ? "#ff0000" :
            mag >= 3 ? "#ff6600" :
@@ -32,8 +24,23 @@ function getRadius(mag) {
     return mag && !isNaN(mag) ? mag * 3.5 : 3;
 }
 
+function toIGNDate(isoDate) {
+    const [year, month, day] = isoDate.split("-");
+    return `${day}/${month}/${year}`;
+}
+
+function updateDateLabel(isoDate) {
+    dateLabel.textContent = `Fecha seleccionada: ${toIGNDate(isoDate)}`;
+}
+
+// --- Plot markers on the map ---
 function plotEarthquakes(data) {
     earthquakeLayer.clearLayers();
+
+    if (!data || data.length === 0) {
+        alert("ℹ️ No earthquakes recorded on this date.");
+        return;
+    }
 
     data.forEach(eq => {
         if (!eq.lat || !eq.lon || isNaN(eq.lat) || isNaN(eq.lon)) return;
@@ -59,30 +66,53 @@ function plotEarthquakes(data) {
     });
 }
 
-async function loadQuakes(ignDate) {
+// --- Load earthquakes for specific date ---
+async function loadQuakesByISODate(isoDate) {
+    const ignDate = toIGNDate(isoDate);
+    console.log(`Fetching data for ${ignDate}...`);
+
     try {
         const res = await fetch(`${API_BASE}/day?date=${ignDate}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         console.log(`Loaded ${data.length} earthquakes for ${ignDate}`);
         plotEarthquakes(data);
-        dateLabel.textContent = `Fecha seleccionada: ${ignDate}`;
+        updateDateLabel(isoDate);
     } catch (err) {
         console.error(`Failed to load data for ${ignDate}:`, err);
     }
 }
 
-// Initialize today’s earthquakes
-const today = new Date();
-const todayDD = String(today.getDate()).padStart(2, "0");
-const todayMM = String(today.getMonth() + 1).padStart(2, "0");
-const todayYYYY = today.getFullYear();
-const todayIGN = `${todayDD}/${todayMM}/${todayYYYY}`;
+// --- Fetch the latest active date and set it as default ---
+async function setInitialDate() {
+    try {
+        const res = await fetch(`${API_BASE}/latest-date`);
+        const json = await res.json();
 
-loadQuakes(todayIGN);
+        if (json.latest) {
+            const [day, month, year] = json.latest.split("/");
+            const isoDate = `${year}-${month}-${day}`;
+            datePicker.value = isoDate;
+            loadQuakesByISODate(isoDate);
+        } else {
+            console.warn("No earthquake data available.");
+        }
+    } catch (err) {
+        console.error("Failed to fetch latest date:", err);
+    }
+}
 
-// Auto-refresh selected date every 15 minutes
+// --- Date picker event listener ---
+datePicker.addEventListener("change", (e) => {
+    const isoDate = e.target.value;
+    if (isoDate) loadQuakesByISODate(isoDate);
+});
+
+// --- Auto-refresh markers every 15 minutes ---
 setInterval(() => {
-    const date = datePicker.value;
-    if (date) loadQuakes(date);
+    const isoDate = datePicker.value;
+    loadQuakesByISODate(isoDate);
 }, 15 * 60 * 1000);
+
+// --- Initialize page ---
+setInitialDate();
