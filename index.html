@@ -37,8 +37,26 @@
         }
     </style>
 </head>
+<!-- Status bar -->
+<div id="status-bar" class="status status-loading">Cargando estado…</div>
+
+<style>
+  .status {
+    margin: 8px 0 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    display: inline-block;
+  }
+  .status-ok    { background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; }
+  .status-warn  { background:#fff8e1; color:#7c5c00; border:1px solid #ffe082; }
+  .status-error { background:#ffebee; color:#b71c1c; border:1px solid #ffcdd2; }
+  .status-loading { background:#eceff1; color:#37474f; border:1px solid #cfd8dc; }
+</style>
 <body>
    <div class="header">
+    
     📎 Fuente:
     <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
         Instituto Geográfico Nacional (IGN) - Catálogo de Terremotos

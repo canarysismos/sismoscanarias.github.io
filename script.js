@@ -11,8 +11,9 @@ let earthquakeLayer = L.layerGroup().addTo(map);
 // DOM elements
 const datePicker = document.getElementById("date-picker");
 const dateLabel = document.getElementById("selected-date-label");
+const statusBar  = document.getElementById("status-bar");
 
-// --- Utility functions ---
+// --- Utilities ---
 function getColor(mag) {
     return mag >= 4 ? "#ff0000" :
            mag >= 3 ? "#ff6600" :
@@ -31,6 +32,59 @@ function toIGNDate(isoDate) {
 
 function updateDateLabel(isoDate) {
     dateLabel.textContent = `Fecha seleccionada: ${toIGNDate(isoDate)}`;
+}
+
+// Parse "DD/MM/YYYY HH:MM:SS" to Date (local time)
+function parseIgnDateTime(dt) {
+    // dt like "27/08/2025 13:15:01"
+    const [dPart, tPart] = dt.split(" ");
+    if (!dPart) return null;
+    const [dd, mm, yyyy] = dPart.split("/").map(Number);
+    let hh = 0, mi = 0, ss = 0;
+    if (tPart) [hh, mi, ss] = tPart.split(":").map(Number);
+    return new Date(yyyy, (mm - 1), dd, hh, mi, ss);
+}
+
+function timeAgo(dtString) {
+    const d = parseIgnDateTime(dtString);
+    if (!d) return "";
+    const diffMs = Date.now() - d.getTime();
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 60) return `${sec}s`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h`;
+    const day = Math.floor(hr / 24);
+    return `${day}d`;
+}
+
+// --- Status bar ---
+async function fetchStatus() {
+    try {
+        if (statusBar) {
+            statusBar.className = "status status-loading";
+            statusBar.textContent = "Cargando estado…";
+        }
+        const res = await fetch(`${API_BASE}/status`);
+        const s = await res.json();
+
+        if (!statusBar) return;
+        if (!s || s.status !== "ok") {
+            statusBar.className = "status status-error";
+            statusBar.textContent = "Estado: error — dataset no disponible.";
+            return;
+        }
+
+        const ago = timeAgo(s.last_update);
+        statusBar.className = "status status-ok";
+        statusBar.innerHTML = `🔄 Última actualización: <b>${s.last_update}</b> (${ago}) · ⚡ Hoy: <b>${s.events_today}</b> · 📚 Total: <b>${s.total_events}</b>`;
+    } catch (e) {
+        if (!statusBar) return;
+        statusBar.className = "status status-error";
+        statusBar.textContent = "Estado: error al consultar /status.";
+        console.error("Status fetch failed:", e);
+    }
 }
 
 // --- Plot markers on the map ---
@@ -111,8 +165,10 @@ datePicker.addEventListener("change", (e) => {
 // --- Auto-refresh markers every 15 minutes ---
 setInterval(() => {
     const isoDate = datePicker.value;
-    loadQuakesByISODate(isoDate);
+    if (isoDate) loadQuakesByISODate(isoDate);
+    fetchStatus(); // refresh status too
 }, 15 * 60 * 1000);
 
 // --- Initialize page ---
 setInitialDate();
+fetchStatus(); // initial status fetch
