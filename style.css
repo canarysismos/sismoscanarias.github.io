@@ -1,0 +1,93 @@
+/* General Page Style */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #222;
+    overflow: hidden;
+}
+
+/* Header Bar */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #004080;
+    color: white;
+    padding: 10px 20px;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1000;
+}
+
+/* Left Side: Logo & Source */
+.header .left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header .logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.header .source a {
+    color: #ffd700;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.header .source a:hover {
+    text-decoration: underline;
+}
+
+/* Date Picker */
+.header .right input {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    color: #333;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+/* Floating Status Bar */
+.status-bar {
+    position: absolute;
+    top: 65px;
+    right: 20px;
+    background-color: rgba(0, 64, 128, 0.95);
+    color: white;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1100;
+}
+
+/* Map Styling */
+#map {
+    height: calc(100vh - 50px);
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .status-bar {
+        top: 110px;
+        right: 10px;
+    }
+}

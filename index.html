@@ -1,73 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canary Islands Earthquakes</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        #map {
-            height: 100vh;
-            width: 100vw;
-        }
-        .header {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 8px 16px;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            z-index: 1000;
-        }
-        #date-picker {
-            margin-left: 10px;
-            padding: 4px;
-            font-size: 14px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 </head>
-<!-- Status bar -->
-<div id="status-bar" class="status status-loading">Cargando estado…</div>
-
-<style>
-  .status {
-    margin: 8px 0 12px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 14px;
-    line-height: 1.4;
-    display: inline-block;
-  }
-  .status-ok    { background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; }
-  .status-warn  { background:#fff8e1; color:#7c5c00; border:1px solid #ffe082; }
-  .status-error { background:#ffebee; color:#b71c1c; border:1px solid #ffcdd2; }
-  .status-loading { background:#eceff1; color:#37474f; border:1px solid #cfd8dc; }
-</style>
 <body>
-   <div class="header">
-    📎 Fuente:
-    <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
-        Instituto Geográfico Nacional (IGN) - Catálogo de Terremotos
-    </a>
-    <span id="selected-date-label" style="margin-left: 15px; font-weight: bold;"></span>
-    <input type="date" id="date-picker" style="margin-left:10px; padding:4px; font-size:14px;">
-</div>
+    <!-- Top Header -->
+    <div class="header">
+        <div class="left">
+            <span class="logo">🌍 Terremotos Canarias</span>
+            <span class="source">
+                📎 Fuente:
+                <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
+                    Instituto Geográfico Nacional (IGN)
+                </a>
+            </span>
+        </div>
+        <div class="right">
+            <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly>
+        </div>
+    </div>
+
+    <!-- Floating Status Bar -->
+    <div id="status-bar" class="status-bar">Cargando datos...</div>
+
+    <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- Our Script -->
     <script src="script.js"></script>
 </body>
 </html>

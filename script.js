@@ -1,179 +1,94 @@
-// ----------------------------
-// CONFIGURATION
-// ----------------------------
 const API_BASE = "https://api.quakes.earth";
-
-// Leaflet map initialization
-const map = L.map("map").setView([28.3, -16.5], 8);
-
+const map = L.map("map").setView([28.3, -16.6], 7);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "&copy; OpenStreetMap contributors",
-  maxZoom: 18,
+    attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
 
-const markersLayer = L.layerGroup().addTo(map);
+const statusBar = document.getElementById("status-bar");
+const datePicker = document.getElementById("date-picker");
+const selectedDateLabel = document.getElementById("selected-date-label");
+let markers = [];
 
-// ----------------------------
-// UTILITIES
-// ----------------------------
-
-// Format Date -> DD/MM/YYYY
+// --- Date Helpers ---
 function formatDate(date) {
-  const d = String(date.getDate()).padStart(2, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
+    return date.toLocaleDateString("es-ES"); // Always DD/MM/YYYY
 }
 
-// Parse DD/MM/YYYY to JS Date object
-function parseDate(str) {
-  const [d, m, y] = str.split("/");
-  return new Date(`${y}-${m}-${d}`);
+function parseDateInput(value) {
+    const [day, month, year] = value.split("/");
+    return new Date(`${year}-${month}-${day}`);
 }
 
-// Get today's date in correct format
-const today = formatDate(new Date());
+// --- Status Bar Update ---
+function updateStatus() {
+    fetch(`${API_BASE}/status`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || data.status !== "ok") {
+                statusBar.textContent = "Estado: error — dataset no disponible.";
+                return;
+            }
 
-// ----------------------------
-// STATUS BAR SETUP
-// ----------------------------
-const statusBar = document.createElement("div");
-statusBar.id = "status-bar";
-statusBar.style.position = "absolute";
-statusBar.style.top = "15px";
-statusBar.style.right = "15px";
-statusBar.style.background = "rgba(255, 255, 255, 0.95)";
-statusBar.style.borderRadius = "12px";
-statusBar.style.padding = "10px 16px";
-statusBar.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
-statusBar.style.fontFamily = "Arial, sans-serif";
-statusBar.style.fontSize = "14px";
-statusBar.style.color = "#222";
-statusBar.style.zIndex = "1000";
-statusBar.style.lineHeight = "1.4";
-statusBar.style.textAlign = "right";
-document.body.appendChild(statusBar);
+            const lastUpdate = new Date(data.last_update * 1000);
+            const diffMinutes = Math.round((Date.now() - lastUpdate) / 60000);
 
-function updateStatusBar(info) {
-  if (!info || info.status === "error") {
-    statusBar.innerHTML = `<b>Estado:</b> Error — dataset no disponible`;
-    return;
-  }
-
-  const lastUpdate = new Date(info.last_update * 1000);
-  const diffMinutes = Math.floor((Date.now() - lastUpdate.getTime()) / 60000);
-
-  statusBar.innerHTML = `
-    <b>Última actualización:</b> ${formatDate(lastUpdate)} ${lastUpdate.toLocaleTimeString("es-ES")} 
-    (${diffMinutes}m) · ⚡ <b>Hoy:</b> ${info.today} · 📚 <b>Total:</b> ${info.total}
-  `;
+            statusBar.textContent = `Última actualización: ${lastUpdate.toLocaleString("es-ES")} (${diffMinutes}m) · ⚡ Hoy: ${data.today} · 📚 Total: ${data.total}`;
+        })
+        .catch(() => {
+            statusBar.textContent = "Estado: error al consultar /status.";
+        });
 }
 
-// ----------------------------
-// LOAD EARTHQUAKES
-// ----------------------------
-async function loadEarthquakes(date) {
-  try {
-    const response = await fetch(`${API_BASE}/day?date=${date}`);
-    const data = await response.json();
+// --- Load Markers ---
+function loadMarkers(date) {
+    fetch(`${API_BASE}/day?date=${date}`)
+        .then(res => res.json())
+        .then(data => {
+            // Clear old markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
 
-    markersLayer.clearLayers();
+            // Add new markers
+            data.forEach(eq => {
+                const marker = L.circleMarker([eq.lat, eq.lon], {
+                    radius: eq.mag * 2,
+                    color: eq.mag >= 4 ? "#e74c3c" : "#2980b9",
+                    fillColor: eq.mag >= 4 ? "#e74c3c" : "#3498db",
+                    fillOpacity: 0.7,
+                    weight: 1
+                });
 
-    if (!Array.isArray(data) || data.length === 0) {
-      console.warn(`No earthquakes for ${date}`);
-      return;
-    }
+                marker.bindPopup(`
+                    <b>${eq.localizacion}</b><br>
+                    Fecha: ${eq.fecha} ${eq.hora}<br>
+                    Magnitud: ${eq.mag}<br>
+                    Profundidad: ${eq.profundidad} km
+                `);
 
-    data.forEach((quake) => {
-      const marker = L.circleMarker([quake.lat, quake.lon], {
-        radius: 6,
-        fillColor: quake.mag >= 3 ? "#FF4B4B" : "#0077FF",
-        color: "#222",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.85,
-      });
-
-      marker.bindPopup(`
-        <b>${quake.fecha} ${quake.hora}</b><br>
-        <b>Magnitud:</b> ${quake.mag}<br>
-        <b>Profundidad:</b> ${quake.profundidad} km<br>
-        <b>Localización:</b> ${quake.localizacion}
-      `);
-
-      markersLayer.addLayer(marker);
-    });
-  } catch (error) {
-    console.error("Error loading earthquakes:", error);
-  }
+                marker.addTo(map);
+                markers.push(marker);
+            });
+        })
+        .catch(err => {
+            console.error("Error fetching data:", err);
+            statusBar.textContent = "Error al cargar datos de terremotos.";
+        });
 }
 
-// ----------------------------
-// DATE PICKER
-// ----------------------------
-const datePicker = document.querySelector("#date-picker");
-const dateLabel = document.querySelector("#selected-date-label");
+// --- Date Picker Setup ---
+datePicker.addEventListener("click", () => {
+    const date = parseDateInput(datePicker.value);
+    datePicker.showPicker?.(); // Native picker for browsers that support it
+});
 
-function initDatePicker() {
-  flatpickr(datePicker, {
-    dateFormat: "d/m/Y", // <-- Spanish format
-    defaultDate: today,
-    locale: {
-      firstDayOfWeek: 1,
-      weekdays: {
-        shorthand: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
-        longhand: [
-          "Domingo",
-          "Lunes",
-          "Martes",
-          "Miércoles",
-          "Jueves",
-          "Viernes",
-          "Sábado",
-        ],
-      },
-      months: {
-        shorthand: [
-          "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-          "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
-        ],
-        longhand: [
-          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-        ],
-      },
-    },
-    onChange: (selectedDates) => {
-      if (selectedDates.length > 0) {
-        const selectedDate = formatDate(selectedDates[0]);
-        dateLabel.textContent = selectedDate;
-        loadEarthquakes(selectedDate);
-      }
-    },
-  });
+// --- On Date Change ---
+datePicker.addEventListener("change", () => {
+    loadMarkers(datePicker.value);
+});
 
-  // Set initial date and load data
-  datePicker.value = today;
-  dateLabel.textContent = today;
-  loadEarthquakes(today);
-}
-
-// ----------------------------
-// INITIALIZATION
-// ----------------------------
-async function init() {
-  // Fetch status info
-  try {
-    const status = await fetch(`${API_BASE}/status`);
-    const info = await status.json();
-    updateStatusBar(info);
-  } catch (e) {
-    console.error("Failed fetching status:", e);
-    updateStatusBar(null);
-  }
-
-  // Initialize date picker & load today's earthquakes
-  initDatePicker();
-}
-
-init();
+// --- Init ---
+const today = new Date();
+datePicker.value = formatDate(today);
+loadMarkers(datePicker.value);
+updateStatus();
+setInterval(updateStatus, 60000); // Refresh status every minute
