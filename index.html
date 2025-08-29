@@ -1,41 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canary Islands Earthquakes</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sismos Canarias</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
 </head>
 <body>
     <!-- Top Header -->
-    <div class="header">
-        <div class="left">
-            <span class="logo">🌍 Terremotos Canarias</span>
-            <span class="source">
-                📎 Fuente:
-                <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
-                    Instituto Geográfico Nacional (IGN)
-                </a>
-            </span>
+    <header id="main-header">
+        <div class="logo">🌍 Sismos Canarias</div>
+        <div id="date-container">
+            <input id="date-picker" type="text" placeholder="DD/MM/YYYY" readonly />
+            <button id="calendar-button" title="Seleccionar fecha">
+                <span class="icon">📅</span>
+            </button>
         </div>
-      <div id="date-container">
-          <input id="date-picker" type="text" placeholder="DD/MM/YYYY">
-          <span id="calendar-icon">📅</span>
-      </div>
-        <div class="right">
-            <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly>
-        </div>
-    </div>
+    </header>
 
-    <!-- Floating Status Bar -->
-    <div id="status-bar" class="status-bar">Cargando datos...</div>
-
-    <!-- Map Container -->
+    <!-- Map -->
     <div id="map"></div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Floating Status Bar -->
+    <div id="status-bar">Cargando estado...</div>
+
+    <!-- Script -->
     <script src="script.js"></script>
 </body>
 </html>
