@@ -9,31 +9,23 @@
 </head>
 <body>
   <!-- Top header (simple & reliable) -->
-  <header id="main-header">
-    <div class="logo">🌍 Sismos Canarias</div>
-
-    <!-- Date UI (display + button + hidden native input) -->
-    <div id="date-container">
-      <input id="date-display" type="text" placeholder="DD/MM/YYYY" readonly />
-      <button id="calendar-button" title="Seleccionar fecha" aria-label="Seleccionar fecha">
-        <!-- tiny SVG calendar (crisp everywhere) -->
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="17" rx="3" fill="currentColor" opacity="0.15"/>
-          <rect x="3" y="7" width="18" height="14" rx="3" stroke="currentColor" fill="none"/>
-          <line x1="8" y1="3" x2="8" y2="7" stroke="currentColor" stroke-width="2"/>
-          <line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="2"/>
-          <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
-          <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
-          <circle cx="16" cy="12" r="1.2" fill="currentColor"/>
-          <circle cx="8" cy="16" r="1.2" fill="currentColor"/>
-          <circle cx="12" cy="16" r="1.2" fill="currentColor"/>
-          <circle cx="16" cy="16" r="1.2" fill="currentColor"/>
-        </svg>
-      </button>
-      <!-- hidden native date input (always YYYY-MM-DD) -->
-      <input id="date-native" type="date" style="position:absolute; left:-9999px; width:1px; height:1px;">
+  <header id="top-header">
+    <div class="header-left">
+        🌍 <span class="app-title">Sismos Canarias</span>
+        <span class="source-link">
+            📎 Fuente:
+            <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
+                Instituto Geográfico Nacional (IGN). Catálogo de terremotos.
+            </a>
+        </span>
     </div>
-  </header>
+    <div class="header-right">
+        <input id="date-picker" type="text" />
+        <span class="calendar-icon">
+            <i class="fa fa-calendar"></i>
+        </span>
+    </div>
+</header>
 
   <!-- Map -->
   <div id="map"></div>

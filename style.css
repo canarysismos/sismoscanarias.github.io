@@ -67,3 +67,60 @@ html, body {
 
 /* Leaflet popup readability */
 .leaflet-popup-content { font-size: 14px; }
+/* ====== HEADER STYLING ====== */
+#top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #063970; /* Deep blue, same as before */
+    padding: 8px 16px;
+    color: white;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.app-title {
+    color: #ffffff;
+    margin-right: 10px;
+}
+
+.source-link {
+    font-weight: normal;
+    font-size: 14px;
+    color: #cce3ff;
+}
+
+.source-link a {
+    color: #ffdd57;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.source-link a:hover {
+    color: #fff176;
+    text-decoration: underline;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-icon {
+    color: white;
+    background-color: #063970;
+    border-radius: 6px;
+    padding: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
