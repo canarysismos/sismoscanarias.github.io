@@ -1,100 +1,122 @@
-// ======================
-// CONFIG
-// ======================
+// =============================
+//  Global Variables
+// =============================
+let map;
+let markersLayer;
+let lastSelectedDate = null;
 const API_BASE = "https://api.quakes.earth";
-const map = L.map("map").setView([28.2916, -16.6291], 7);
-let markersLayer = L.layerGroup().addTo(map);
 
-// ======================
-// TILE LAYER
-// ======================
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
-}).addTo(map);
+// =============================
+//  Initialize Map
+// =============================
+function initMap() {
+    map = L.map("map").setView([28.3, -16.6], 7);
 
-// ======================
-// DOM ELEMENTS
-// ======================
-const datePicker = document.querySelector("#date-picker");
-const statusBar = document.querySelector("#status-bar");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-// ======================
-// INIT FLATPICKR
-// ======================
-flatpickr(datePicker, {
-  dateFormat: "d/m/Y",
-  allowInput: true,
-  defaultDate: new Date(),
-  clickOpens: true,
-  locale: {
-    firstDayOfWeek: 1,
-  },
-  onChange: (selectedDates, dateStr) => {
-    if (dateStr) {
-      loadEarthquakes(dateStr);
-    }
-  },
-});
+    markersLayer = L.layerGroup().addTo(map);
+}
 
-// ======================
-// LOAD EARTHQUAKES
-// ======================
+// =============================
+//  Load Earthquake Markers
+// =============================
 async function loadEarthquakes(date) {
-  try {
-    const res = await fetch(`${API_BASE}/day?date=${date}`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const data = await res.json();
+    if (!date) return;
 
-    markersLayer.clearLayers();
+    try {
+        const res = await fetch(`${API_BASE}/day?date=${date}`);
+        const data = await res.json();
 
-    data.forEach(eq => {
-      const { lat, lon, mag, fecha, hora, localizacion } = eq;
+        markersLayer.clearLayers();
 
-      const marker = L.circleMarker([lat, lon], {
-        radius: mag * 2.5,
-        color: mag >= 4 ? "#ff0000" : mag >= 2 ? "#ffa500" : "#008000",
-        fillOpacity: 0.7,
-      });
+        data.forEach(eq => {
+            const marker = L.circleMarker([eq.lat, eq.lon], {
+                radius: eq.mag >= 4 ? 7 : 5,
+                fillColor: eq.mag >= 4 ? "#ff0000" : "#ffaa00",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
 
-      marker.bindPopup(`
-        <b>${localizacion}</b><br>
-        ${fecha} ${hora}<br>
-        <b>Mag:</b> ${mag}
-      `);
+            marker.bindPopup(`
+                <b>${eq.fecha} ${eq.hora}</b><br>
+                <b>Mag:</b> ${eq.mag} ML<br>
+                <b>Profundidad:</b> ${eq.profundidad} km<br>
+                <b>Localización:</b> ${eq.localizacion}
+            `);
 
-      markersLayer.addLayer(marker);
-    });
-
-    console.log(`Loaded ${data.length} earthquakes for ${date}`);
-  } catch (err) {
-    console.error("Failed to load earthquakes:", err);
-  }
-}
-
-// ======================
-// STATUS BAR
-// ======================
-async function updateStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/status`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const data = await res.json();
-
-    if (statusBar) {
-      statusBar.textContent = `Última actualización: ${data.last_update} (${data.last_diff}m) · ⚡ Hoy: ${data.today} · 📚 Total: ${data.total}`;
+            markersLayer.addLayer(marker);
+        });
+    } catch (err) {
+        console.error("[ERROR] Failed loading earthquakes:", err);
     }
-  } catch (err) {
-    console.warn("Status update failed:", err);
-    if (statusBar) statusBar.textContent = "Estado: error cargando datos";
-  }
 }
 
-// ======================
-// AUTO-INIT
-// ======================
-const today = new Date();
-const todayFormatted = today.toLocaleDateString("es-ES");
-datePicker.value = todayFormatted;
-loadEarthquakes(todayFormatted);
-updateStatus();
-setInterval(updateStatus, 60000);
+// =============================
+//  Status Bar Updater
+// =============================
+async function updateStatus() {
+    const statusBar = document.getElementById("status-bar");
+    statusBar.textContent = "Cargando estado…";
+
+    try {
+        const res = await fetch(`${API_BASE}/status`);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const data = await res.json();
+
+        const lastUpdate = new Date(data.last_update);
+        const now = new Date();
+        const diffMins = Math.floor((now - lastUpdate) / 60000);
+
+        statusBar.innerHTML = `
+            Última actualización: <b>${lastUpdate.toLocaleDateString("es-ES")}</b>, 
+            ${lastUpdate.toLocaleTimeString("es-ES")} 
+            (${diffMins}m) · ⚡ Hoy: ${data.today} · 📚 Total: ${data.total}
+        `;
+    } catch (err) {
+        console.error("[ERROR] Status fetch failed:", err);
+        statusBar.textContent = "Estado no disponible";
+    }
+}
+
+// =============================
+//  Initialize Date Picker
+// =============================
+function initDatePicker() {
+    const dateInput = document.getElementById("date-picker");
+
+    flatpickr(dateInput, {
+        dateFormat: "d/m/Y",
+        defaultDate: lastSelectedDate || new Date(),
+        allowInput: true,
+        locale: "es",
+        clickOpens: true,
+        onChange: function(selectedDates, dateStr) {
+            if (dateStr) {
+                lastSelectedDate = dateStr;
+                loadEarthquakes(dateStr);
+            }
+        }
+    });
+}
+
+// =============================
+//  Initialization
+// =============================
+document.addEventListener("DOMContentLoaded", () => {
+    initMap();
+    initDatePicker();
+    updateStatus();
+
+    // Load today's quakes by default
+    const today = new Date().toLocaleDateString("es-ES");
+    lastSelectedDate = today;
+    loadEarthquakes(today);
+
+    // Refresh status every 60 sec
+    setInterval(updateStatus, 60000);
+});
