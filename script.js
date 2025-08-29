@@ -6,12 +6,14 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 const statusBar = document.getElementById("status-bar");
 const datePicker = document.getElementById("date-picker");
-const selectedDateLabel = document.getElementById("selected-date-label");
+const calendarIcon = document.getElementById("calendar-icon");
 let markers = [];
 
 // --- Date Helpers ---
 function formatDate(date) {
-    return date.toLocaleDateString("es-ES"); // Always DD/MM/YYYY
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${date.getFullYear()}`;
 }
 
 function parseDateInput(value) {
@@ -44,11 +46,9 @@ function loadMarkers(date) {
     fetch(`${API_BASE}/day?date=${date}`)
         .then(res => res.json())
         .then(data => {
-            // Clear old markers
             markers.forEach(m => map.removeLayer(m));
             markers = [];
 
-            // Add new markers
             data.forEach(eq => {
                 const marker = L.circleMarker([eq.lat, eq.lon], {
                     radius: eq.mag * 2,
@@ -75,14 +75,20 @@ function loadMarkers(date) {
         });
 }
 
-// --- Date Picker Setup ---
-datePicker.addEventListener("click", () => {
-    const date = parseDateInput(datePicker.value);
-    datePicker.showPicker?.(); // Native picker for browsers that support it
-});
+// --- Open Native Date Picker ---
+function openDatePicker() {
+    datePicker.type = "date";
+    datePicker.showPicker?.();
+}
 
-// --- On Date Change ---
+// Handle input click + icon click
+datePicker.addEventListener("click", openDatePicker);
+calendarIcon.addEventListener("click", openDatePicker);
+
 datePicker.addEventListener("change", () => {
+    const dateObj = new Date(datePicker.value);
+    datePicker.type = "text";
+    datePicker.value = formatDate(dateObj);
     loadMarkers(datePicker.value);
 });
 
@@ -91,4 +97,4 @@ const today = new Date();
 datePicker.value = formatDate(today);
 loadMarkers(datePicker.value);
 updateStatus();
-setInterval(updateStatus, 60000); // Refresh status every minute
+setInterval(updateStatus, 60000);
