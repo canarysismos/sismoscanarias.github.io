@@ -1,39 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sismos Canarias</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sismos Canarias</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" />
 </head>
 <body>
-  <!-- Top header (simple & reliable) -->
-  <header id="top-header">
-    <div class="header-left">
-        🌍 <span class="app-title">Sismos Canarias</span>
-        <span class="source-link">
+    <header class="main-header">
+        <div class="logo">
+            🌍 <span>Sismos Canarias</span>
+        </div>
+        <div class="source-link">
             📎 Fuente:
             <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
                 Instituto Geográfico Nacional (IGN). Catálogo de terremotos.
             </a>
-        </span>
-    </div>
-    <div class="header-right">
-        <input id="date-picker" type="text" />
-        <span class="calendar-icon">
-            <i class="fa fa-calendar"></i>
-        </span>
-    </div>
-</header>
+        </div>
+        <div class="calendar-container">
+            <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly />
+            <span id="calendar-icon">📅</span>
+        </div>
+    </header>
 
-  <!-- Map -->
-  <div id="map"></div>
+    <div id="map"></div>
 
-  <!-- Floating status -->
-  <div id="status-bar">Cargando estado…</div>
+    <!-- Floating status bar -->
+    <div id="status-bar">Cargando estado...</div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="script.js"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
