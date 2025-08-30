@@ -1,96 +1,50 @@
-const API_BASE = "https://api.quakes.earth";
-const map = L.map("map").setView([28.3, -16.6], 7);
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
-
-let markersLayer = L.layerGroup().addTo(map);
-
-// =========================
-// Calendar Setup
-// =========================
-const datePicker = flatpickr("#date-picker", {
-    dateFormat: "d/m/Y",
-    locale: "es",
-    defaultDate: new Date(),
-    clickOpens: true,
-    onChange: (selectedDates, dateStr) => {
-        loadEarthquakes(dateStr);
-    }
-});
-
-// Icon opens the picker
-document.getElementById("calendar-icon").addEventListener("click", () => {
-    datePicker.open();
-});
-
-// =========================
-// Fetch Earthquake Data
-// =========================
-async function loadEarthquakes(date) {
-    try {
-        const res = await fetch(`${API_BASE}/day?date=${date}`);
-        const data = await res.json();
-
-        markersLayer.clearLayers();
-
-        data.forEach(eq => {
-            const marker = L.circleMarker([eq.lat, eq.lon], {
-                radius: Math.max(eq.mag * 2.5, 4),
-                fillColor: getColor(eq.mag),
-                color: "#000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.7
-            });
-
-            marker.bindPopup(`
-                <strong>${eq.fecha} ${eq.hora}</strong><br>
-                <b>Mag:</b> ${eq.mag}<br>
-                <b>Prof:</b> ${eq.prof} km<br>
-                <b>Loc:</b> ${eq.loc}
-            `);
-
-            markersLayer.addLayer(marker);
-        });
-    } catch (err) {
-        console.error("Error loading data:", err);
-    }
-}
-
-// Color based on magnitude
-function getColor(mag) {
-    if (mag >= 4) return "#ff0000";
-    if (mag >= 3) return "#ff6600";
-    if (mag >= 2) return "#ffaa00";
-    return "#00cc00";
-}
-
-// =========================
-// Status Bar Refresh
-// =========================
-async function refreshStatus() {
+document.addEventListener("DOMContentLoaded", function () {
+    const dateInput = document.getElementById("date-input");
     const statusBar = document.getElementById("status-bar");
-    try {
-        const res = await fetch(`${API_BASE}/status`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const status = await res.json();
+    const statusContent = document.getElementById("status-content");
+    const statusToggle = document.getElementById("status-toggle");
 
-        statusBar.textContent = `Última actualización: ${status.last_update} (${status.elapsed}m) · ⚡ Hoy: ${status.today} · 📚 Total: ${status.total}`;
-    } catch (err) {
-        console.warn("Status unavailable:", err);
-        statusBar.textContent = "⚠ Estado no disponible";
+    // --- Restore DD/MM/YYYY format ---
+    function formatDate(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
     }
-}
 
-// Auto-refresh markers + status every minute
-setInterval(() => {
-    const selectedDate = document.querySelector("#date-picker").value;
-    loadEarthquakes(selectedDate);
-    refreshStatus();
-}, 60000);
+    // Initialize with today’s date
+    const today = new Date();
+    dateInput.value = formatDate(today);
 
-// Initial load
-loadEarthquakes(flatpickr.formatDate(new Date(), "d/m/Y"));
-refreshStatus();
+    // Attach native calendar picker
+    dateInput.addEventListener("focus", () => dateInput.showPicker && dateInput.showPicker());
+
+    // --- Fetch and format status bar info ---
+    async function updateStatus() {
+        try {
+            const response = await fetch("https://api.quakes.earth/status");
+            if (!response.ok) throw new Error("Network error");
+            const data = await response.json();
+
+            // Parse last update timestamp safely
+            const lastUpdate = new Date(data.last_update * 1000);
+            const now = new Date();
+            const diffMinutes = Math.round((now - lastUpdate) / 60000);
+
+            statusContent.textContent =
+                `Última actualización: ${formatDate(lastUpdate)} ${lastUpdate.toLocaleTimeString()} ` +
+                `(${diffMinutes}m) · ⚡ Hoy: ${data.today_count} · 📚 Total: ${data.total}`;
+        } catch (error) {
+            statusContent.textContent = "⚠ No se puede cargar el estado.";
+        }
+    }
+
+    updateStatus();
+    setInterval(updateStatus, 60000); // refresh every minute
+
+    // --- Mobile toggle button ---
+    statusToggle.addEventListener("click", () => {
+        statusBar.classList.toggle("collapsed");
+    });
+});

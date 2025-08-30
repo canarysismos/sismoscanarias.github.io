@@ -1,84 +1,119 @@
-/* General reset */
-* {
+/* =========================
+   GLOBAL STYLES
+========================= */
+body {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f9;
 }
 
-/* Header */
-.main-header {
+/* =========================
+   HEADER STYLING
+========================= */
+header {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
     background-color: #003366;
+    padding: 8px 15px;
     color: #fff;
-    padding: 8px 16px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
 }
 
-.main-header .logo {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.source-link {
-    font-size: 14px;
-}
-
-.source-link a {
-    color: #ffd700;
-    font-weight: bold;
-    text-decoration: none;
-}
-
-.source-link a:hover {
-    text-decoration: underline;
-}
-
-/* Calendar */
-.calendar-container {
+header h1 {
+    font-size: 1.2rem;
+    margin: 0;
     display: flex;
     align-items: center;
-    gap: 5px;
-    background: #fff;
-    border-radius: 6px;
-    padding: 2px 6px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-#date-picker {
-    border: none;
-    padding: 5px;
+header h1 img {
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+}
+
+/* =========================
+   DATE INPUT + ICON
+========================= */
+.date-picker-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#date-input {
+    padding: 8px 35px 8px 10px;
     font-size: 14px;
-    width: 120px;
-    text-align: center;
+    border: 2px solid #004a99;
+    border-radius: 6px;
     outline: none;
+    background-color: #fff;
+    color: #000;
     cursor: pointer;
-    font-weight: bold;
 }
 
-#calendar-icon {
-    cursor: pointer;
-    font-size: 18px;
+.calendar-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background: url("https://cdn-icons-png.flaticon.com/512/747/747310.png") no-repeat center;
+    background-size: contain;
+    pointer-events: none;
 }
 
-/* Map */
-#map {
-    height: calc(100vh - 50px);
-    width: 100%;
-}
-
-/* Floating status bar */
+/* =========================
+   STATUS BAR
+========================= */
 #status-bar {
     position: fixed;
     bottom: 12px;
     left: 12px;
     background-color: #003366;
-    color: #fff;
-    padding: 6px 12px;
+    color: white;
+    font-size: 13px;
+    padding: 8px 15px;
     border-radius: 6px;
-    font-size: 14px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease-in-out;
+    max-width: 95%;
+    flex-wrap: wrap;
+}
+
+/* Toggle Button for Mobile */
+#status-toggle {
+    display: none;
+    font-weight: bold;
+    background-color: #0055cc;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+/* Collapsed State on Mobile */
+#status-bar.collapsed .status-content {
+    display: none;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    #status-toggle {
+        display: block;
+    }
+
+    #status-bar {
+        justify-content: flex-start;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
 }

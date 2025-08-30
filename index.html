@@ -20,9 +20,18 @@
                 Instituto Geográfico Nacional (IGN). Catálogo de terremotos.
             </a>
         </div>
-        <div class="calendar-container">
-            <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly />
-            <span id="calendar-icon">📅</span>
+        #<div class="calendar-container">
+         #   <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly />
+          #  <span id="calendar-icon">📅</span>
+        #</div>
+        <div class="date-picker-container">
+            <input type="text" id="date-input" readonly>
+            <span class="calendar-icon"></span>
+        </div>
+
+        <div id="status-bar">
+            <span id="status-toggle">ℹ Estado</span>
+            <span id="status-content">Cargando estado...</span>
         </div>
     </header>
 
