@@ -1,49 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sismos Canarias</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sismos Canarias</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header class="main-header">
-        <div class="logo">
-            🌍 <span>Sismos Canarias</span>
-        </div>
-        <div class="source-link">
-            📎 Fuente:
-            <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
-                Instituto Geográfico Nacional (IGN). Catálogo de terremotos.
-            </a>
-        </div>
-        #<div class="calendar-container">
-         #   <input type="text" id="date-picker" placeholder="DD/MM/YYYY" readonly />
-          #  <span id="calendar-icon">📅</span>
-        #</div>
-        <div class="date-picker-container">
-            <input type="text" id="date-input" readonly>
-            <span class="calendar-icon"></span>
-        </div>
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-left">
+      🌍 <span class="brand">Sismos Canarias</span>
+    </div>
 
-        <div id="status-bar">
-            <span id="status-toggle">ℹ Estado</span>
-            <span id="status-content">Cargando estado...</span>
-        </div>
-    </header>
+    <div class="header-middle">
+      📎 Fuente:
+      <a href="https://doi.org/10.7419/162.03.2022" target="_blank">
+        Instituto Geográfico Nacional (IGN). Catálogo de terremotos.
+      </a>
+    </div>
 
-    <div id="map"></div>
+    <div class="header-right">
+      <div class="date-picker-wrap">
+        <input id="date-picker" type="text" placeholder="DD/MM/YYYY" readonly />
+        <button id="calendar-icon" aria-label="Abrir calendario" title="Elegir fecha"></button>
+      </div>
+    </div>
+  </header>
 
-    <!-- Floating status bar -->
-    <div id="status-bar">Cargando estado...</div>
+  <!-- Map -->
+  <div id="map"></div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script src="script.js"></script>
+  <!-- Status (expanded by default on desktop, collapsed on mobile via JS) -->
+  <div id="status-container" class="expanded">
+    <button id="status-pill" aria-label="Mostrar estado">⚡ Estado</button>
+
+    <div id="status-bar">
+      <div id="status-text">Cargando estado…</div>
+      <div class="status-actions">
+        <button id="refresh-btn" class="btn">🔄 Actualizar</button>
+        <button id="collapse-btn" class="btn" title="Ocultar">⬇</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
