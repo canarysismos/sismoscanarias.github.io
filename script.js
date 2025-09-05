@@ -140,9 +140,10 @@ class MiniDatePicker {
   open() {
     if (this.opened) return;
     this.opened = true;
+    // Build, unhide, then position so we can measure correctly
     this._build();
-    this.position();
     this.picker.classList.remove("qpkr-hide");
+    this.position();
   }
 
   close() {
@@ -154,10 +155,23 @@ class MiniDatePicker {
   position() {
     if (!this.picker) return;
     const r = this.input.getBoundingClientRect();
-    const top = window.scrollY + r.bottom + 6;
-    const left = window.scrollX + r.right - this.picker.offsetWidth;
+    const margin = 8;
+    const w = this.picker.offsetWidth || 280;
+    const h = this.picker.offsetHeight || 320;
+
+    // Horizontal: align to input right, clamped to viewport
+    let left = window.scrollX + r.right - w;
+    const maxLeft = window.scrollX + window.innerWidth - w - margin;
+    left = Math.min(Math.max(left, window.scrollX + margin), maxLeft);
+
+    // Vertical: prefer below; flip above if it would overflow
+    let top = window.scrollY + r.bottom + 6;
+    const overflowBottom = top + h + margin > window.scrollY + window.innerHeight;
+    if (overflowBottom) top = window.scrollY + r.top - h - 6;
+    if (top < window.scrollY + margin) top = window.scrollY + margin;
+
     this.picker.style.top = `${top}px`;
-    this.picker.style.left = `${Math.max(8, left)}px`;
+    this.picker.style.left = `${left}px`;
   }
 
   _build() {
@@ -483,6 +497,13 @@ function wireDateInput(onChange) {
   if (!els.date) return;
   // Use our mini datepicker
   const dp = new MiniDatePicker(els.date, els.calTrigger);
+  // Ensure calendar icon also opens the picker
+  if (els.calTrigger) {
+    els.calTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      dp.open();
+    });
+  }
   els.date.addEventListener("change", onChange);
   els.date.addEventListener("keydown", (e) => {
     if (e.key === "Enter") onChange();
