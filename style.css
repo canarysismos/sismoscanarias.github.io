@@ -95,3 +95,49 @@ html,body{
 @media (max-width: 768px){
   .header-middle{ display:none; }          /* save space on phones */
 }
+/* Popup container styling */
+.leaflet-popup-content-wrapper.quake-popup-container {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: quakePopupFadeIn 0.3s ease forwards;
+}
+
+/* Inner content */
+.quake-popup {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+.quake-popup h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #0077cc;
+}
+
+.quake-popup p {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+/* Smooth fade-in + slide-up */
+@keyframes quakePopupFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-out effect */
+.leaflet-fade-anim .leaflet-popup {
+  transition: opacity 0.25s ease-in-out;
+}

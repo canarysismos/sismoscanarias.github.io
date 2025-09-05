@@ -1,5 +1,5 @@
 const API_BASE = "https://api.quakes.earth";
-let map, markersLayer, fp;
+let map, markersLayer, fp, markers = [];
 
 // Helpers
 const pad2 = n => String(n).padStart(2, "0");
@@ -27,6 +27,11 @@ function colorForMag(mag) {
   return "#B22222";             // dark red
 }
 
+// Calculate marker radius
+function calcRadius(mag, zoom) {
+  return Math.max(3, (mag * 3) + zoom * 0.6);
+}
+
 function initMap() {
   map = L.map("map").setView([28.3, -16.6], 7);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -34,6 +39,32 @@ function initMap() {
       "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
+
+  // Animate marker resizing on zoom
+  map.on("zoom", () => {
+    const zoom = map.getZoom();
+    markers.forEach(({ marker, mag }) => {
+      const newRadius = calcRadius(mag, zoom);
+      animateMarkerRadius(marker, newRadius);
+    });
+  });
+}
+
+// Smooth transition helper
+function animateMarkerRadius(marker, newRadius) {
+  const start = marker.options.radius;
+  const diff = newRadius - start;
+  const duration = 300; // 300ms for smoothness
+  const startTime = performance.now();
+
+  function step(ts) {
+    const progress = Math.min((ts - startTime) / duration, 1);
+    const eased = start + diff * progress;
+    marker.setRadius(eased);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
 }
 
 async function loadEarthquakes(dateStr) {
@@ -45,6 +76,7 @@ async function loadEarthquakes(dateStr) {
     if (!Array.isArray(data)) throw new Error("Unexpected payload");
 
     markersLayer.clearLayers();
+    markers = [];
 
     data.forEach(eq => {
       const lat = Number(eq.lat ?? eq.latitude);
@@ -57,9 +89,8 @@ async function loadEarthquakes(dateStr) {
       const fecha = eq.fecha ?? "—";
       const hora = eq.hora ?? "—";
 
-      // Dynamically scale radius based on zoom + magnitude
       const zoom = map.getZoom();
-      const radius = Math.max(3, (mag * 3) + zoom * 0.6);
+      const radius = calcRadius(mag, zoom);
 
       const marker = L.circleMarker([lat, lon], {
         radius,
@@ -69,11 +100,19 @@ async function loadEarthquakes(dateStr) {
         fillOpacity: 0.85,
       });
 
-      marker.bindPopup(
-        `<b>${loc}</b><br/>${fecha} ${hora}<br/><b>Magnitud:</b> ${mag}<br/><b>Profundidad:</b> ${prof} km`
-      );
+      // Inside loadEarthquakes(), replace marker.bindPopup(...) with:
+       marker.bindPopup(
+  `<div class="quake-popup">
+      <h3>${loc}</h3>
+      <p><b>Fecha:</b> ${fecha} ${hora}</p>
+      <p><b>Magnitud:</b> ${mag}</p>
+      <p><b>Profundidad:</b> ${prof} km</p>
+  </div>`,
+  { className: "quake-popup-container" }
+);
 
       markersLayer.addLayer(marker);
+      markers.push({ marker, mag });
     });
   } catch (e) {
     console.error("loadEarthquakes failed:", e);
