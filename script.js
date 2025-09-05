@@ -20,16 +20,21 @@ function parseLastUpdate(val) {
 
 // Color spectrum based on magnitude
 function colorForMag(mag) {
-  if (mag < 1) return "#FFFF99"; // light yellow
-  if (mag < 2) return "#FFD700"; // yellow-orange
-  if (mag < 3) return "#FF8C00"; // orange
-  if (mag < 4) return "#FF4500"; // red
-  return "#B22222";             // dark red
+  if (isNaN(mag)) return "#CCCCCC"; // default grey fallback
+  if (mag < 1) return "#FFFF99";    // light yellow
+  if (mag < 2) return "#FFD700";    // yellow-orange
+  if (mag < 3) return "#FF8C00";    // orange
+  if (mag < 4) return "#FF4500";    // red
+  return "#B22222";                 // dark red
 }
 
 // Calculate marker radius
 function calcRadius(mag, zoom) {
-  return Math.max(3, (mag * 3) + zoom * 0.6);
+  const m = Number.isFinite(mag) ? Math.max(0, mag) : 0.8; // ensure a visible default for missing mags
+  const z = Number.isFinite(zoom) ? zoom : 7;
+  // Bigger baseline + zoom scaling
+  const size = 6 + (m * 4.0) + (z * 0.9);
+  return Math.max(6, Math.min(size, 36)); // clamp between 6px and 36px
 }
 
 function initMap() {
@@ -44,8 +49,8 @@ function initMap() {
   map.on("zoom", () => {
     const zoom = map.getZoom();
     markers.forEach(({ marker, mag }) => {
-      const newRadius = calcRadius(mag, zoom);
-      animateMarkerRadius(marker, newRadius);
+      const target = calcRadius(mag, zoom);
+      animateMarkerRadius(marker, target);
     });
   });
 }
@@ -97,7 +102,7 @@ async function loadEarthquakes(dateStr) {
         color: "#000",
         weight: 1,
         fillColor: colorForMag(mag),
-        fillOpacity: 0.85,
+        fillOpacity: 0.9
       });
 
       // Inside loadEarthquakes(), replace marker.bindPopup(...) with:
