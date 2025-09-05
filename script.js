@@ -18,15 +18,19 @@ const els = {
     $("#date-input") ||
     document.querySelector('input[type="date"]'),
   status:
-    $("#status-bar") ||
+    // Prefer the dedicated text node to avoid nuking buttons
+    $("#status-text") ||
+    $(".status-text") ||
     $("#status") ||
     $(".status-chip") ||
-    $(".status-text"),
+    $("#status-bar"),
   refresh:
     $("#refresh-btn") ||
     $(".refresh-btn") ||
     $(".status-refresh"),
   calTrigger:
+    // Support both id and class for the calendar button
+    $("#calendar-icon") ||
     $("#calendar-btn") ||
     $(".calendar-btn") ||
     $(".calendar-icon") ||
